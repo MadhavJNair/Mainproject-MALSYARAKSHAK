@@ -24,11 +24,10 @@ class RealtimeDataPage extends StatefulWidget {
 }
 
 class _RealtimeDataPageState extends State<RealtimeDataPage> {
-  late DatabaseReference _temperatureReference;
   late DatabaseReference _phReference;
-  String _temperatureValue = "N/A";
   String _phValue = "N/A";
   double _sliderValue = 0.0;
+  double _maxSliderValue = 14.0; // Updated maximum value for the circular slider
 
   @override
   void initState() {
@@ -38,23 +37,7 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
 
   Future<void> _initializeFirebase() async {
     try {
-      _temperatureReference = FirebaseDatabase.instance.reference().child('TemperatureValue');
       _phReference = FirebaseDatabase.instance.reference().child('pHValue');
-
-      _temperatureReference.onValue.listen((event) {
-        final dynamic value = event.snapshot.value;
-        if (value != null && (value is double || value is int)) {
-          setState(() {
-            _temperatureValue = value.toString();
-            _sliderValue = value.toDouble();
-          });
-        } else {
-          setState(() {
-            _temperatureValue = "N/A";
-          });
-          print('TemperatureValue is not a valid number: $value');
-        }
-      });
 
       _phReference.onValue.listen((event) {
         final dynamic value = event.snapshot.value;
@@ -63,6 +46,11 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
             _phValue = value.toString();
             _sliderValue = value.toDouble(); // Update _sliderValue with pH value
           });
+
+          // Check if pH value is above 9 or under 6
+          if (_sliderValue > 9 || _sliderValue < 6) {
+            _showPhAlert(); // Show alert
+          }
         } else {
           setState(() {
             _phValue = "N/A";
@@ -73,7 +61,6 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
     } catch (e) {
       print('Error initializing Firebase: $e');
       setState(() {
-        _temperatureValue = "N/A";
         _phValue = "N/A";
       });
     }
@@ -89,6 +76,27 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
     }
   }
 
+  // Function to show alert
+  void _showPhAlert() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Alert'),
+          content: Text('pH value is outside the acceptable range.'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,74 +107,34 @@ class _RealtimeDataPageState extends State<RealtimeDataPage> {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Padding(
-              padding: EdgeInsets.only(left: 10, top: 5),
-              child: Text("Temperature Reading:", style: TextStyle(color: Colors.white)),
+              padding: EdgeInsets.only(left: 20, top: 20),
+              child: Text(
+                "pH Reading: $_phValue",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             SizedBox(height: 20),
             SleekCircularSlider(
               appearance: CircularSliderAppearance(
-                infoProperties: InfoProperties(
-                  mainLabelStyle: TextStyle(color: Colors.white),
-                  topLabelStyle: TextStyle(color: Colors.white, fontSize: 20),
-                  topLabelText: "Temp",
-                  modifier: (percentage) => (_temperatureValue),
-                ),
+                size: 300,
                 customColors: CustomSliderColors(
-                  trackColors: [Color.fromARGB(255, 246, 87, 43),
-                    Color.fromARGB(255, 78, 203, 245),
-                    Color.fromARGB(255, 3, 135, 250)],
-                  progressBarColors: [
-                    Color.fromARGB(255, 246, 87, 43),
-                    Color.fromARGB(255, 78, 203, 245),
-                    Color.fromARGB(255, 3, 135, 250)
-                  ],
+                  trackColor: Colors.grey[800]!,
+                  progressBarColor: _getColorForPHLevel(_sliderValue),
+                ),
+                infoProperties: InfoProperties(
+                  mainLabelStyle: TextStyle(color: Colors.white, fontSize: 30),
+                  topLabelStyle: TextStyle(color: Colors.white, fontSize: 20),
+                  topLabelText: "pH",
+                  modifier: (percentage) => (_phValue),
                 ),
               ),
-              initialValue: double.parse(_temperatureValue),
+              initialValue: _sliderValue,
+              max: 14, // Set maximum value for the circular slider
               onChangeEnd: null,
-            ),
-            SizedBox(height: 20),
-            Padding(
-              padding: EdgeInsets.only(left: 20, top: 20),
-              child: Text("pH Reading: $_sliderValue" , style: TextStyle(color: Colors.white))
-            ),
-            
-            SizedBox(height: 20),
-            SliderTheme(
-              
-              data: SliderTheme.of(context).copyWith(
-                activeTrackColor: _getColorForPHLevel(_sliderValue),
-                inactiveTrackColor: Colors.red[100],
-                trackShape: RoundedRectSliderTrackShape(),
-                trackHeight: 5.0,
-                thumbShape: RoundSliderThumbShape(enabledThumbRadius: 12.0),
-                overlayColor: Color.fromARGB(255, 66, 181, 216).withAlpha(32),
-                overlayShape: RoundSliderOverlayShape(overlayRadius: 28.0),
-                tickMarkShape: RoundSliderTickMarkShape(),
-                inactiveTickMarkColor: Color.fromARGB(255, 20, 11, 12),
-                valueIndicatorShape: PaddleSliderValueIndicatorShape(),
-                valueIndicatorColor: Color.fromARGB(118, 62, 163, 200),
-                valueIndicatorTextStyle: TextStyle(
-                  color: Colors.white,
-                ),
-                // valueIndicatorFormatter: (value) => 'pH: $_phValue',
-                
-                showValueIndicator: ShowValueIndicator.always, // Show value indicator always
-              ),
-              child: Slider(
-                value: _sliderValue,
-                onChanged: (newValue) {
-                  // Optional: You can add logic here to handle slider value change
-                },
-                min: 0,
-                max: 14,
-                divisions: 14,
-                label: _sliderValue.round().toString(),
-              ),
             ),
           ],
         ),

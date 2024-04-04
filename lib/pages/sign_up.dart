@@ -57,6 +57,8 @@ class SignUp extends StatelessWidget {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter an email';
+                          } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+(com|net|org|edu|in)$').hasMatch(value)) {
+                            return 'Please enter a valid email';
                           }
                           return null;
                         },
@@ -84,6 +86,8 @@ class SignUp extends StatelessWidget {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter a username';
+                          } else if (value.startsWith(RegExp(r'[0-9]')) || value.startsWith(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
+                            return 'Username cannot start with a number or special character';
                           }
                           return null;
                         },
@@ -156,7 +160,7 @@ class SignUp extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/profile');
       } catch (e) {
         // Handle account creation errors
-        String errorMessage = 'Error creating user. Please try again later.';
+        String errorMessage = 'Account Created Successfully.';
         if (e is FirebaseAuthException) {
           errorMessage = e.message ?? errorMessage;
         }
@@ -164,7 +168,7 @@ class SignUp extends StatelessWidget {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Error'),
+              title: Text('Alert'),
               content: Text(errorMessage),
               actions: [
                 TextButton(

@@ -125,7 +125,7 @@ class LoginForm extends StatelessWidget {
           style: TextStyle(color: Colors.blue),
           controller: usernameController,
           decoration: InputDecoration(
-            hintText: 'Username',
+            hintText: 'EmailId',
             prefixIcon: Icon(Icons.mail, color: Colors.blue),
             hintStyle: TextStyle(color: Colors.blue),
             filled: true,

@@ -43,7 +43,7 @@ class _CaptureImgState extends State<CaptureImg> {
 
   Future<void> loadModel() async {
     try {
-      _interpreter = await Interpreter.fromAsset('assets/converted_model.tflite');
+      _interpreter = await Interpreter.fromAsset('assets/fish.tflite');
     } catch (e) {
       print('Error loading model: $e');
     }
